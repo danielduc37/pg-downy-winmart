@@ -34,7 +34,7 @@
       </div>
 
       <p class="text-xs text-slate-500 leading-relaxed">
-        Hóa đơn của bạn thỏa điều kiện mua <strong>2 MEAT Deli Dồi sụn</strong>.
+        Hóa đơn của bạn thỏa điều kiện có <strong>Nước Aquafina</strong>.
       </p>
 
       <button id="btnCloseVoucherModal" class="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-bold text-sm rounded-xl shadow-md shadow-amber-200 transition">
@@ -94,7 +94,7 @@
         <div class="text-2xl">🎁</div>
         <div class="flex-1">
           <p class="text-sm font-extrabold text-emerald-800">Bạn đã nhận được voucher 100k!</p>
-          <p class="text-xs text-slate-600">Đủ điều kiện: Hóa đơn chứa 2 MEAT Deli Dồi sụn.</p>
+          <p class="text-xs text-slate-600">Đủ điều kiện: Hóa đơn chứa nước Aquafina.</p>
         </div>
         <span class="px-2.5 py-1 bg-emerald-600 text-white font-bold text-xs rounded-lg shadow-sm">VOUCHER 100K</span>
       </div>
@@ -182,27 +182,11 @@
       }
     });
 
-    // Check condition: 2 MEAT Deli Dồi sụn
+    // Check condition: Có nước Aquafina
     function checkVoucherCondition(text) {
       if (!text) return false;
       const norm = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      
-      const hasMeatDeli = norm.includes("meat deli") || norm.includes("meatdeli");
-      const hasDoiSun = norm.includes("doi sun");
-
-      if (hasMeatDeli && hasDoiSun) {
-        // Kiểm tra số lượng 2
-        const hasQty2 = 
-          /2\s*(x|\*)\s*\d+/i.test(norm) ||
-          /meat\s*deli[\s\S]{0,90}doi\s*sun[\s\S]{0,50}\b2\b/i.test(norm) ||
-          /\b2\b[\s\S]{0,50}meat\s*deli[\s\S]{0,90}doi\s*sun/i.test(norm) ||
-          norm.includes("124,000") || 
-          norm.includes("124.000") ||
-          norm.includes("124 000");
-
-        return hasQty2;
-      }
-      return false;
+      return norm.includes("aquafina");
     }
 
     btnCloseVoucherModal.addEventListener('click', () => {
@@ -237,20 +221,16 @@
         const text = data.text;
         resultText.value = text;
 
-        // Kiểm tra điều kiện 2 MEAT Deli Dồi sụn
+        // Kiểm tra điều kiện: Có nước Aquafina
         const isEligible = checkVoucherCondition(text);
 
         if (isEligible) {
-          // Bắn pháo hoa ăn mừng
           if (typeof confetti === 'function') {
             confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
           }
-          
-          // Hiển thị Popup thông báo TRƯỚC KHI hiển thị text
           voucherModal.classList.remove('hidden');
           voucherBanner.classList.remove('hidden');
         } else {
-          // Không thỏa thì hiển thị text trực tiếp
           resultCard.classList.remove('hidden');
           resultCard.scrollIntoView({ behavior: 'smooth' });
         }
