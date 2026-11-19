@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pg.downy.winmart - Trích Xuất Hóa Đơn</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧾</text></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    code, textarea { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen p-4 sm:p-8 flex flex-col justify-center items-center">
+
+  <div class="max-w-2xl w-full mx-auto space-y-6">
+    
+    <!-- Header -->
+    <div class="text-center space-y-2">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-full text-xs font-bold tracking-wide uppercase">
+        <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+        <span>P&G Downy • WinMart Hub</span>
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">pg.downy.winmart</h1>
+      <p class="text-xs sm:text-sm text-slate-500">Hệ thống đọc & trích xuất văn bản hóa đơn tự động 100% AI</p>
+    </div>
+
+    <!-- Upload Card -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+      
+      <!-- Drag & Drop Zone -->
+      <div id="dropZone" class="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-xl p-8 text-center cursor-pointer transition bg-slate-50/50 hover:bg-blue-50/20 relative min-h-[200px] flex flex-col items-center justify-center">
+        <input type="file" id="fileInput" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10">
+        
+        <div id="uploadPrompt" class="space-y-3 pointer-events-none">
+          <div class="w-12 h-12 mx-auto rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-slate-700">Kéo thả ảnh hóa đơn vào đây</p>
+            <p class="text-xs text-slate-400 mt-0.5">hoặc <span class="text-blue-600 font-bold">bấm để chọn file từ máy/điện thoại</span></p>
+          </div>
+          <p class="text-[11px] text-slate-400">Chụp màn hình rồi dán trực tiếp bằng <kbd class="px-1.5 py-0.5 bg-slate-200 rounded text-slate-700 font-mono font-medium">Ctrl + V</kbd></p>
+        </div>
+
+        <div id="previewContainer" class="hidden w-full space-y-2">
+          <img id="imagePreview" src="" alt="Preview" class="max-h-72 mx-auto rounded-lg shadow-sm border border-slate-200 object-contain">
+          <p id="imageName" class="text-xs text-slate-500 truncate text-center"></p>
+        </div>
+      </div>
+
+      <!-- Button -->
+      <button id="btnExtract" disabled class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl transition duration-200 shadow-md shadow-blue-100 flex items-center justify-center gap-2">
+        <span id="btnText">Trích Xuất Text Hóa Đơn</span>
+      </button>
+
+    </div>
+
+    <!-- Result Card -->
+    <div id="resultCard" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-3 hidden">
+      <div class="flex items-center justify-between">
+        <h2 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+          Kết quả trích xuất:
+        </h2>
+        <button id="btnCopy" class="px-3.5 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+          <span id="copyText">Sao chép Text</span>
+        </button>
+      </div>
+
+      <textarea id="resultText" rows="16" readonly class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:outline-none leading-relaxed resize-y"></textarea>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center text-xs text-slate-400">
+      pg.downy.winmart • Powered by Gemini AI • Hệ thống hoạt động 24/7
+    </footer>
+
+  </div>
+
+  <script>
+    let currentImageBase64 = null;
+    let currentMimeType = null;
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const uploadPrompt = document.getElementById('uploadPrompt');
+    const previewContainer = document.getElementById('previewContainer');
+    const imagePreview = document.getElementById('imagePreview');
+    const imageName = document.getElementById('imageName');
+    const btnExtract = document.getElementById('btnExtract');
+    const btnText = document.getElementById('btnText');
+
+    const resultCard = document.getElementById('resultCard');
+    const resultText = document.getElementById('resultText');
+    const btnCopy = document.getElementById('btnCopy');
+    const copyText = document.getElementById('copyText');
+
+    function handleImage(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        return alert('Vui lòng chọn 1 file hình ảnh (JPG, PNG, WEBP...)');
+      }
+      currentMimeType = file.type;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const fullUrl = e.target.result;
+        imagePreview.src = fullUrl;
+        imageName.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        currentImageBase64 = fullUrl.split(',')[1];
+
+        uploadPrompt.classList.add('hidden');
+        previewContainer.classList.remove('hidden');
+        btnExtract.disabled = false;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) handleImage(e.target.files[0]);
+    });
+
+    ['dragenter', 'dragover'].forEach(n => dropZone.addEventListener(n, (e) => { e.preventDefault(); dropZone.classList.add('border-blue-500', 'bg-blue-50/30'); }));
+    ['dragleave', 'drop'].forEach(n => dropZone.addEventListener(n, (e) => { e.preventDefault(); dropZone.classList.remove('border-blue-500', 'bg-blue-50/30'); }));
+    dropZone.addEventListener('drop', (e) => {
+      if (e.dataTransfer.files.length > 0) handleImage(e.dataTransfer.files[0]);
+    });
+
+    window.addEventListener('paste', (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.includes('image')) {
+          handleImage(items[i].getAsFile());
+          break;
+        }
+      }
+    });
+
+    btnExtract.addEventListener('click', async () => {
+      if (!currentImageBase64) return;
+
+      btnExtract.disabled = true;
+      btnText.textContent = 'AI đang phân tích hóa đơn...';
+
+      try {
+        const res = await fetch('/api/extract', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image: currentImageBase64,
+            mime_type: currentMimeType || 'image/jpeg'
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || `Lỗi server (${res.status})`);
+        }
+
+        resultText.value = data.text;
+        resultCard.classList.remove('hidden');
+        resultCard.scrollIntoView({ behavior: 'smooth' });
+
+      } catch (err) {
+        alert('Lỗi: ' + err.message);
+      } finally {
+        btnExtract.disabled = false;
+        btnText.textContent = 'Trích Xuất Text Hóa Đơn';
+      }
+    });
+
+    btnCopy.addEventListener('click', () => {
+      navigator.clipboard.writeText(resultText.value).then(() => {
+        copyText.textContent = '✓ Đã sao chép';
+        setTimeout(() => { copyText.textContent = 'Sao chép Text'; }, 2000);
+      });
+    });
+  </script>
+
+</body>
+</html>

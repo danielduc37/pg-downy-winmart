@@ -1,0 +1,2 @@
+# Vercel & Render requirements
+# Uses Python standard library (urllib, json, http.server)
