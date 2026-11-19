@@ -5,6 +5,20 @@ import urllib.request
 import urllib.error
 
 class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        # Serve index.html or health check
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.end_headers()
+        
+        # Try finding index.html in current or parent dir
+        for p in ["index.html", "../index.html", os.path.join(os.path.dirname(__file__), "..", "index.html")]:
+            if os.path.exists(p):
+                with open(p, "rb") as f:
+                    self.wfile.write(f.read())
+                return
+        self.wfile.write(b"pg.downy.winmart API is running")
+
     def do_POST(self):
         content_length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(content_length)
@@ -20,33 +34,17 @@ class handler(BaseHTTPRequestHandler):
 
             api_key = os.environ.get("GEMINI_API_KEY", "").strip()
             if not api_key:
-                self.send_error_json(500, "Server chưa được cấu hình GEMINI_API_KEY trong Environment Variables.")
+                self.send_error_json(500, "Chưa cài đặt GEMINI_API_KEY trên Vercel Environment Variables.")
                 return
 
-            extracted_text = self.call_gemini(api_key, image_base64, mime_type)
+            prompt = (
+                "Bạn là chuyên gia OCR văn bản và hóa đơn. "
+                "Hãy đọc và trích xuất TOÀN BỘ nội dung chữ và số có trong ảnh hóa đơn/chứng từ này một cách đầy đủ, chính xác 100%. "
+                "Giữ nguyên định dạng từng dòng, từng con số, mã số và ký tự tiếng Việt. "
+                "Không bỏ sót bất kỳ dòng nào (kể cả số hóa đơn, ngày giờ, danh sách mặt hàng, số lượng, đơn giá, thành tiền, tổng tiền, điểm tích lũy, mã CQT, thông tin khuyến mãi)."
+            )
 
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.end_headers()
-            response = json.dumps({"success": True, "text": extracted_text}, ensure_ascii=False)
-            self.wfile.write(response.encode("utf-8"))
-
-        except Exception as e:
-            self.send_error_json(500, str(e))
-
-    def call_gemini(self, api_key, image_base64, mime_type):
-        prompt = (
-            "Bạn là chuyên gia OCR văn bản và hóa đơn. "
-            "Hãy đọc và trích xuất TOÀN BỘ nội dung chữ và số có trong ảnh hóa đơn/chứng từ này một cách đầy đủ, chính xác 100%. "
-            "Giữ nguyên định dạng từng dòng, từng con số, mã số và ký tự tiếng Việt. "
-            "Không bỏ sót bất kỳ dòng nào (kể cả số hóa đơn, ngày giờ, danh sách mặt hàng, số lượng, đơn giá, thành tiền, tổng tiền, điểm tích lũy, mã CQT, thông tin khuyến mãi)."
-        )
-
-        models = ["gemini-flash-lite-latest", "gemini-3-flash-preview"]
-        last_err = None
-
-        for model in models:
-            endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+            endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key={api_key}"
             req_data = {
                 "contents": [
                     {
@@ -67,29 +65,28 @@ class handler(BaseHTTPRequestHandler):
                 }
             }
 
-            try:
-                req = urllib.request.Request(
-                    endpoint,
-                    data=json.dumps(req_data).encode("utf-8"),
-                    headers={"Content-Type": "application/json"},
-                    method="POST"
-                )
-                with urllib.request.urlopen(req, timeout=35) as resp:
-                    resp_json = json.loads(resp.read().decode("utf-8"))
-                    candidate = resp_json.get("candidates", [{}])[0]
-                    text = candidate.get("content", {}).get("parts", [{}])[0].get("text", "")
-                    if text:
-                        return text
-            except Exception as e:
-                last_err = str(e)
+            req = urllib.request.Request(
+                endpoint,
+                data=json.dumps(req_data).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                resp_json = json.loads(resp.read().decode("utf-8"))
+                text = resp_json["candidates"][0]["content"]["parts"][0]["text"]
 
-        raise Exception(last_err or "Không thể đọc nội dung ảnh.")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({"success": True, "text": text}, ensure_ascii=False).encode("utf-8"))
+
+        except Exception as e:
+            self.send_error_json(500, str(e))
 
     def send_error_json(self, code, message):
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.end_headers()
-        response = json.dumps({"success": False, "error": message}, ensure_ascii=False)
-        self.wfile.write(response.encode("utf-8"))
+        self.wfile.write(json.dumps({"success": False, "error": message}, ensure_ascii=False).encode("utf-8"))
 
 app = handler
